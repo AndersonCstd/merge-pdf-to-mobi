@@ -1,0 +1,6 @@
+*.pdf
+bin
+include
+lib
+lib64
+*.cfg
