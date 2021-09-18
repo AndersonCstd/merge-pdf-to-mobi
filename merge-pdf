@@ -5,17 +5,15 @@ FIXME
 1 . fix the folder arguments 
 
 """
-
+import re
 import os
 import argparse
 import zipfile
 import rarfile
 from glob import glob
 from shutil import rmtree, copyfile
-
 from pdf2image import convert_from_path
 
-import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument("folder", help="Folder are the .cbz's files where...")
@@ -23,11 +21,15 @@ parser.add_argument("cover", help="Please, I need to a path to file cover...")
 parser.add_argument("result", help="Name of the merged file...")
 args = parser.parse_args()
 
-print("Looking for files...")
+result = f'{args.result}.cbr'
+print(result)
+#exit()
+print("Looking for files...", end=' ')
 pdfFiles = glob(f'{args.folder}/*.pdf',recursive=True)
 pdfFiles.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
+print(f'{len(pdfFiles)} finded!')
 
-saveFolder = "tempZ" 
+saveFolder = "/tmp/tempZ" 
 os.mkdir(saveFolder)
 
 # Store Pdf with convert_from_path function
@@ -40,14 +42,6 @@ for index, file in enumerate(pdfFiles):
         images[i].save(f"{saveFolder}/f{index} - p{i}.jpg", 'JPEG')
     print('OK')
 
-"""
-import shutil
-
-original = r'original path where the file is currently stored\file name.file extension'
-target = r'target path where the file will be copied\file name.file extension'
-
-shutil.copyfile(original, target)
-"""
 if '.png' in args.cover:
     coverType = '.png'
 elif '.jpg' in args.cover:
@@ -62,15 +56,21 @@ content = glob(f"{saveFolder}/*")
 content.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
 
 #recompress files 
-print(f'Recompressing in a new file called {args.result}...')
-with zipfile.ZipFile(args.result,"w") as zf:
+print(f'Recompressing in a new file called {result}...')
+with zipfile.ZipFile(result,"w") as zf:
     for page in content:
         page = page 
         zf.write(page)
     copyfile(args.cover,f'{coverName}')
     zf.write(coverName)
-print(f'{args.result} saved.')
+print(f'{result} saved.')
 #delete the temp folder
 
 rmtree(saveFolder)
+
+print("Starting kcc cli interface...")
+cmd = f'python kcc-c2e.py -m -p K1 -f MOBI {result}'
+os.system(cmd)
+
+os.remove(result)
 
