@@ -69,7 +69,7 @@ print(f'{result} saved.')
 rmtree(saveFolder)
 
 print("Starting kcc cli interface...")
-cmd = f'python kcc-c2e.py -m -p K1 -f MOBI {result}'
+cmd = f'kcc-c2e -m -p K1 -f MOBI {result}'
 os.system(cmd)
 
 os.remove(result)
