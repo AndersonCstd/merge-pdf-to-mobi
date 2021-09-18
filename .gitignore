@@ -1,6 +1,8 @@
 *.pdf
+*.mobi
 bin
 include
 lib
 lib64
 *.cfg
+__pycache__
