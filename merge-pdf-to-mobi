@@ -10,6 +10,7 @@ import os
 import argparse
 import zipfile
 import rarfile
+import subprocess
 from glob import glob
 from shutil import rmtree, copyfile
 from pdf2image import convert_from_path
@@ -29,11 +30,20 @@ pdfFiles = glob(f'{args.folder}/*.pdf',recursive=True)
 pdfFiles.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
 print(f'{len(pdfFiles)} finded!')
 
-saveFolder = "/tmp/tempZ" 
+saveFolder = "/tmp/tempZ"
+os.system(f"rm -rf {saveFolder}")
 os.mkdir(saveFolder)
 
 # Store Pdf with convert_from_path function
 print("Extracting images...")
+cap = 0
+for index, file in enumerate(pdfFiles):
+    #subprocess.Popen(['pdftoppm', '-png', f"{file}", f"{saveFolder}",'-progress'])
+    print(f'{index+1}/{len(pdfFiles)} -->', end=' ')
+    os.system(f"pdftoppm -png -progress {file} {saveFolder}/{index+1}")
+    print('OK')
+
+"""
 for index, file in enumerate(pdfFiles):
     print(f'{index}/{len(pdfFiles)-1}', end=' ')
     images = convert_from_path(file)
@@ -41,7 +51,7 @@ for index, file in enumerate(pdfFiles):
     for i in range(len(images)):
         images[i].save(f"{saveFolder}/f{index} - p{i}.jpg", 'JPEG')
     print('OK')
-
+"""
 if '.png' in args.cover:
     coverType = '.png'
 elif '.jpg' in args.cover:
@@ -51,7 +61,7 @@ else:
     exit(1)
 
 coverName = f'{saveFolder}/0000000-cover{coverType}'
-
+copyfile(args.cover,f'{coverName}')
 content = glob(f"{saveFolder}/*")
 content.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
 
@@ -61,8 +71,7 @@ with zipfile.ZipFile(result,"w") as zf:
     for page in content:
         page = page 
         zf.write(page)
-    copyfile(args.cover,f'{coverName}')
-    zf.write(coverName)
+
 print(f'{result} saved.')
 #delete the temp folder
 
@@ -73,4 +82,5 @@ cmd = f'kcc-c2e -m -p K1 -f MOBI {result}'
 os.system(cmd)
 
 os.remove(result)
+exit(0)
 
