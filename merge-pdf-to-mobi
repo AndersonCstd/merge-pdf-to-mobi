@@ -10,21 +10,23 @@ import os
 import argparse
 import zipfile
 import rarfile
+import socket
 import subprocess
 from glob import glob
 from shutil import rmtree, copyfile
 from pdf2image import convert_from_path
-
+import http.server
+import socketserver
 
 parser = argparse.ArgumentParser()
 parser.add_argument("folder", help="Folder are the .cbz's files where...")
 parser.add_argument("cover", help="Please, I need to a path to file cover...")
 parser.add_argument("result", help="Name of the merged file...")
+parser.add_argument("server", nargs=1,default='n',help="Start a http server...")
 args = parser.parse_args()
 
 result = f'{args.result}.cbr'
-print(result)
-#exit()
+
 print("Looking for files...", end=' ')
 pdfFiles = glob(f'{args.folder}/*.pdf',recursive=True)
 pdfFiles.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
@@ -34,24 +36,14 @@ saveFolder = "/tmp/tempZ"
 os.system(f"rm -rf {saveFolder}")
 os.mkdir(saveFolder)
 
-# Store Pdf with convert_from_path function
 print("Extracting images...")
 cap = 0
 for index, file in enumerate(pdfFiles):
-    #subprocess.Popen(['pdftoppm', '-png', f"{file}", f"{saveFolder}",'-progress'])
     print(f'{index+1}/{len(pdfFiles)} -->', end=' ')
-    os.system(f"pdftoppm -png -progress {file} {saveFolder}/{index+1}")
+    print(f'{file} --> {saveFolder}/{index+1}')
+    os.system(f"pdftoppm -png -progress '{file}' '{saveFolder}'/{index+1}")
     print('OK')
 
-"""
-for index, file in enumerate(pdfFiles):
-    print(f'{index}/{len(pdfFiles)-1}', end=' ')
-    images = convert_from_path(file)
-    print(f' --> {len(images)}', end=' ')
-    for i in range(len(images)):
-        images[i].save(f"{saveFolder}/f{index} - p{i}.jpg", 'JPEG')
-    print('OK')
-"""
 if '.png' in args.cover:
     coverType = '.png'
 elif '.jpg' in args.cover:
@@ -62,10 +54,10 @@ else:
 
 coverName = f'{saveFolder}/0000000-cover{coverType}'
 copyfile(args.cover,f'{coverName}')
+
 content = glob(f"{saveFolder}/*")
 content.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
 
-#recompress files 
 print(f'Recompressing in a new file called {result}...')
 with zipfile.ZipFile(result,"w") as zf:
     for page in content:
@@ -73,7 +65,6 @@ with zipfile.ZipFile(result,"w") as zf:
         zf.write(page)
 
 print(f'{result} saved.')
-#delete the temp folder
 
 rmtree(saveFolder)
 
@@ -82,5 +73,19 @@ cmd = f'kcc-c2e -m -p K1 -f MOBI {result}'
 os.system(cmd)
 
 os.remove(result)
-exit(0)
+
+myIp = socket.gethostbyname(socket.gethostname())
+PORT = 8000
+
+def startHttpServer(PORT=8000):
+    Handler = http.server.SimpleHTTPRequestHandler
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        print("serving at port", PORT)
+        httpd.serve_forever()
+
+if args.server[0].lower() == 'y':
+    print(f"Take your Kindle! Starting http server on {myIp}:{PORT};")
+    startHttpServer(PORT)
+else:
+    exit(0)
 
