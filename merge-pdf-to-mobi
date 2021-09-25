@@ -19,16 +19,20 @@ import http.server
 import socketserver
 
 parser = argparse.ArgumentParser()
-parser.add_argument("folder", help="Folder are the .cbz's files where...")
-parser.add_argument("cover", help="Please, I need to a path to file cover...")
-parser.add_argument("result", help="Name of the merged file...")
-parser.add_argument("server", nargs=1,default='n',help="Start a http server...")
+#parser.add_argument("folder", help="Folder are the .cbz's files where...")
+parser.add_argument("--pdf",nargs='*', help="Pdf files...")
+parser.add_argument("--cover",nargs=1, help="Please, I need to a path to file cover...")
+parser.add_argument("--output",nargs=1, help="Name of the merged file...")
+parser.add_argument("--server", nargs=1,default='n',help="Start a http server...")
 args = parser.parse_args()
 
-result = f'{args.result}.cbr'
+result = f'{args.output[0]}.cbr'
+cover = args.cover[0]
+server = args.server[0].lower()
 
 print("Looking for files...", end=' ')
-pdfFiles = glob(f'{args.folder}/*.pdf',recursive=True)
+#pdfFiles = glob(f'{args.folder}/*.pdf',recursive=True)
+pdfFiles = args.pdf
 pdfFiles.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
 print(f'{len(pdfFiles)} finded!')
 
@@ -44,16 +48,16 @@ for index, file in enumerate(pdfFiles):
     os.system(f"pdftoppm -png -progress '{file}' '{saveFolder}'/{index+1}")
     print('OK')
 
-if '.png' in args.cover:
+if '.png' in cover:
     coverType = '.png'
-elif '.jpg' in args.cover:
+elif '.jpg' in cover:
     coverType = '.jpg'
 else:
-    printf("Failed do determinate the file type of the cover...")
+    print("Failed do determinate the file type of the cover...")
     exit(1)
 
 coverName = f'{saveFolder}/0000000-cover{coverType}'
-copyfile(args.cover,f'{coverName}')
+copyfile(cover,f'{coverName}')
 
 content = glob(f"{saveFolder}/*")
 content.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
@@ -83,7 +87,7 @@ def startHttpServer(PORT=8000):
         print("serving at port", PORT)
         httpd.serve_forever()
 
-if args.server[0].lower() == 'y':
+if server == 'y':
     print(f"Take your Kindle! Starting http server on {myIp}:{PORT};")
     startHttpServer(PORT)
 else:
