@@ -28,7 +28,7 @@ args = parser.parse_args()
 
 result = f'{args.output[0]}.cbr'
 cover = args.cover[0]
-server = args.server[0].lower()
+server = args.server[0][0].lower()
 
 print("Looking for files...", end=' ')
 #pdfFiles = glob(f'{args.folder}/*.pdf',recursive=True)
@@ -45,7 +45,7 @@ cap = 0
 for index, file in enumerate(pdfFiles):
     print(f'{index+1}/{len(pdfFiles)} -->', end=' ')
     print(f'{file} --> {saveFolder}/{index+1}')
-    os.system(f"pdftoppm -png -progress '{file}' '{saveFolder}'/{index+1}")
+    os.system(f"pdftoppm -png -rx 75 -ry 75 -progress '{file}' '{saveFolder}'/{index+1}")
     print('OK')
 
 if '.png' in cover:
@@ -76,7 +76,18 @@ print("Starting kcc cli interface...")
 cmd = f'kcc-c2e -m -p K1 -f MOBI {result}'
 os.system(cmd)
 
-os.remove(result)
+mobiFiles = glob("*.mobi") 
+deleteCBR = 0
+if mobiFiles[0] == f'{args.output[0]}.mobi':
+    print(".mobi file saved!")
+    deleteCBR = 1
+if deleteCBR == 1:
+    print("Deleting .CBR file...")
+    os.remove(result)
+else:
+    print("""Because happend a error on the process the .CRB 
+             file will be not deleted...""")
+
 
 myIp = socket.gethostbyname(socket.gethostname())
 PORT = 8000
