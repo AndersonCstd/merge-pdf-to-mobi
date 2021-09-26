@@ -18,89 +18,100 @@ from pdf2image import convert_from_path
 import http.server
 import socketserver
 
-parser = argparse.ArgumentParser()
-#parser.add_argument("folder", help="Folder are the .cbz's files where...")
-parser.add_argument("--pdf",nargs='*', help="Pdf files...")
-parser.add_argument("--cover",nargs=1, help="Please, I need to a path to file cover...")
-parser.add_argument("--output",nargs=1, help="Name of the merged file...")
-parser.add_argument("--server", nargs=1,default='n',help="Start a http server...")
-args = parser.parse_args()
-
-result = f'{args.output[0]}.cbr'
-cover = args.cover[0]
-server = args.server[0][0].lower()
-
-print("Looking for files...", end=' ')
-#pdfFiles = glob(f'{args.folder}/*.pdf',recursive=True)
-pdfFiles = args.pdf
-pdfFiles.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
-print(f'{len(pdfFiles)} finded!')
-
-saveFolder = "/tmp/tempZ"
-os.system(f"rm -rf {saveFolder}")
-os.mkdir(saveFolder)
-
-print("Extracting images...")
-cap = 0
-for index, file in enumerate(pdfFiles):
-    print(f'{index+1}/{len(pdfFiles)} -->', end=' ')
-    print(f'{file} --> {saveFolder}/{index+1}')
-    os.system(f"pdftoppm -png -rx 75 -ry 75 -progress '{file}' '{saveFolder}'/{index+1}")
-    print('OK')
-
-if '.png' in cover:
-    coverType = '.png'
-elif '.jpg' in cover:
-    coverType = '.jpg'
-else:
-    print("Failed do determinate the file type of the cover...")
-    exit(1)
-
-coverName = f'{saveFolder}/0000000-cover{coverType}'
-copyfile(cover,f'{coverName}')
-
-content = glob(f"{saveFolder}/*")
-content.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
-
-print(f'Recompressing in a new file called {result}...')
-with zipfile.ZipFile(result,"w") as zf:
-    for page in content:
-        page = page 
-        zf.write(page)
-
-print(f'{result} saved.')
-
-rmtree(saveFolder)
-
-print("Starting kcc cli interface...")
-cmd = f'kcc-c2e -m -p K1 -f MOBI {result}'
-os.system(cmd)
-
-mobiFiles = glob("*.mobi") 
-deleteCBR = 0
-if mobiFiles[0] == f'{args.output[0]}.mobi':
-    print(".mobi file saved!")
-    deleteCBR = 1
-if deleteCBR == 1:
-    print("Deleting .CBR file...")
-    os.remove(result)
-else:
-    print("""Because happend a error on the process the .CRB 
-             file will be not deleted...""")
-
-
-myIp = socket.gethostbyname(socket.gethostname())
-PORT = 8000
-
 def startHttpServer(PORT=8000):
     Handler = http.server.SimpleHTTPRequestHandler
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         print("serving at port", PORT)
         httpd.serve_forever()
 
-if server == 'y':
-    print(f"Take your Kindle! Starting http server on {myIp}:{PORT};")
-    startHttpServer(PORT)
-else:
-    exit(0)
+def main():
+    parser = argparse.ArgumentParser()
+#parser.add_argument("folder", help="Folder are the .cbz's files where...")
+    parser.add_argument("--pdf",nargs='*', help="Pdf files...")
+    parser.add_argument("--cover",nargs=1, help="Please, I need to a path to file cover...")
+    parser.add_argument("--output",nargs=1, help="Name of the merged file...")
+    parser.add_argument("--server", nargs=1,default='n',help="Start a http server...")
+    args = parser.parse_args()
 
+    result = f'{args.output[0]}.cbr'
+ 
+    try:
+        cover = args.cover[0]
+        cover1 = 1
+    except: 
+        cover1 = 0
+
+    server = args.server[0][0].lower()
+
+    print("Looking for files...", end=' ')
+#pdfFiles = glob(f'{args.folder}/*.pdf',recursive=True)
+    pdfFiles = args.pdf
+    pdfFiles.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
+    print(f'{len(pdfFiles)} finded!')
+
+    saveFolder = "/tmp/tempZ"
+    os.system(f"rm -rf {saveFolder}")
+    os.mkdir(saveFolder)
+
+    print("Extracting images...")
+    cap = 0
+    for index, file in enumerate(pdfFiles):
+        print(f'{index+1}/{len(pdfFiles)} -->', end=' ')
+        print(f'{file} --> {saveFolder}/{index+1}')
+        os.system(f"pdftoppm -png -rx 75 -ry 75 -progress '{file}' '{saveFolder}'/{index+1}")
+        print('OK')
+
+    if cover1:
+        if '.png' in cover:
+            coverType = '.png'
+        elif '.jpg' in cover:
+            coverType = '.jpg'
+        else:
+            print("Failed do determinate the file type of the cover...")
+            cover = 0
+        if cover1:
+            coverName = f'{saveFolder}/0000000-cover{coverType}'
+            copyfile(cover,f'{coverName}')
+
+    content = glob(f"{saveFolder}/*")
+    content.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
+
+    print(f'Recompressing in a new file called {result}...')
+    with zipfile.ZipFile(result,"w") as zf:
+        for page in content:
+            page = page 
+            zf.write(page)
+
+    print(f'{result} saved.')
+
+    rmtree(saveFolder)
+
+    print("Starting kcc cli interface...")
+    cmd = f'kcc-c2e -m -p K1 -f MOBI {result}'
+    os.system(cmd)
+
+    mobiFiles = glob("*.mobi") 
+    deleteCBR = 0
+    if mobiFiles[0] == f'{args.output[0]}.mobi':
+        print(".mobi file saved!")
+        deleteCBR = 1
+    if deleteCBR == 1:
+        print("Deleting .CBR file...")
+        os.remove(result)
+    else:
+        print("""Because happend a error on the process the .CRB 
+                 file will be not deleted...""")
+
+
+    myIp = socket.gethostbyname(socket.gethostname())
+    PORT = 8000
+
+
+    if server == 'y':
+        print(f"Take your Kindle! Starting http server on {myIp}:{PORT};")
+        startHttpServer(PORT)
+    else:
+        exit(0)
+
+if __name__ == "__main__":
+    main()
