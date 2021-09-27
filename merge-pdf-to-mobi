@@ -43,6 +43,7 @@ def main():
         server = 'n'
 
     print("Looking for files...", end=' ')
+    pdfFiles = args.pdf
     pdfFiles.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
     print(f'{len(pdfFiles)} finded!')
 
