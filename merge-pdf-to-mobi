@@ -1,10 +1,5 @@
 #! /bin/python3.9
 
-"""
-FIXME
-1 . fix the folder arguments 
-
-"""
 import re
 import os
 import argparse
@@ -14,7 +9,6 @@ import socket
 import subprocess
 from glob import glob
 from shutil import rmtree, copyfile
-from pdf2image import convert_from_path
 import http.server
 import socketserver
 
@@ -26,26 +20,29 @@ def startHttpServer(PORT=8000):
 
 def main():
     parser = argparse.ArgumentParser()
-#parser.add_argument("folder", help="Folder are the .cbz's files where...")
     parser.add_argument("--pdf",nargs='*', help="Pdf files...")
     parser.add_argument("--cover",nargs=1, help="Please, I need to a path to file cover...")
     parser.add_argument("--output",nargs=1, help="Name of the merged file...")
     parser.add_argument("--server", nargs=1,default='n',help="Start a http server...")
     args = parser.parse_args()
-
-    result = f'{args.output[0]}.cbr'
+    
+    try:
+        result = f'{args.output[0]}.cbr'
+    except:
+        result = f'{args.pdf[0].split(".")[0]}.cbr'
  
     try:
         cover = args.cover[0]
         cover1 = 1
     except: 
         cover1 = 0
-
-    server = args.server[0][0].lower()
+    
+    try:
+        server = args.server[0][0].lower()
+    except:
+        server = 'n'
 
     print("Looking for files...", end=' ')
-#pdfFiles = glob(f'{args.folder}/*.pdf',recursive=True)
-    pdfFiles = args.pdf
     pdfFiles.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
     print(f'{len(pdfFiles)} finded!')
 
@@ -68,14 +65,14 @@ def main():
             coverType = '.jpg'
         else:
             print("Failed do determinate the file type of the cover...")
-            cover = 0
+            cover1 = 0
         if cover1:
             coverName = f'{saveFolder}/0000000-cover{coverType}'
             copyfile(cover,f'{coverName}')
 
     content = glob(f"{saveFolder}/*")
     content.sort(key=lambda var:[int(x) if x.isdigit() else x for x in re.findall(r'[^0-9]|[0-9]+', var)])
-
+    
     print(f'Recompressing in a new file called {result}...')
     with zipfile.ZipFile(result,"w") as zf:
         for page in content:
@@ -91,23 +88,16 @@ def main():
     os.system(cmd)
 
     mobiFiles = glob("*.mobi") 
-    deleteCBR = 0
-    if mobiFiles[0] == f'{args.output[0]}.mobi':
-        print(".mobi file saved!")
-        deleteCBR = 1
-    if deleteCBR == 1:
-        print("Deleting .CBR file...")
+    if mobiFiles[0] == f'{result.split(".")[0]}.mobi':
+        print(".mobi file saved! Deleting .CBR file...")
         os.remove(result)
     else:
         print("""Because happend a error on the process the .CRB 
                  file will be not deleted...""")
-
-
-    myIp = socket.gethostbyname(socket.gethostname())
-    PORT = 8000
-
-
+ 
     if server == 'y':
+        myIp = socket.gethostbyname(socket.gethostname())
+        PORT = 8000
         print(f"Take your Kindle! Starting http server on {myIp}:{PORT};")
         startHttpServer(PORT)
     else:
